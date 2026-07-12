@@ -1,0 +1,13 @@
+# © 2024 DivineDemonGaming Inc. All Rights Reserved.
+# Owner: DivineDemonGaming Inc. | Product: VENTURE Creator Platform
+# Netlify / Vercel / Cloudflare Pages response headers
+
+/*
+  X-Owner: DivineDemonGaming Inc.
+  X-Copyright: © 2024 DivineDemonGaming Inc. All Rights Reserved.
+  X-Product: VENTURE Creator Platform
+  X-Robots-Tag: noindex, nofollow
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()

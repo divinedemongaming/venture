@@ -1,0 +1,100 @@
+{
+  "expo": {
+    "name": "VENTURE",
+    "slug": "venture-creator-platform",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0A0A0F"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.venture.creatorplatform",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSCameraUsageDescription": "VENTURE uses your camera to create content, live stream, and take profile photos.",
+        "NSMicrophoneUsageDescription": "VENTURE uses your microphone for live streaming and video creation.",
+        "NSPhotoLibraryUsageDescription": "VENTURE accesses your photo library to share images and videos.",
+        "NSPhotoLibraryAddUsageDescription": "VENTURE saves content to your photo library.",
+        "NSUserNotificationsUsageDescription": "VENTURE sends notifications for new followers, comments, and live streams.",
+        "NSLocationWhenInUseUsageDescription": "VENTURE uses your location so you can tag where your posts were created."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0A0A0F"
+      },
+      "package": "com.venture.creatorplatform",
+      "versionCode": 1,
+      "permissions": [
+        "CAMERA",
+        "RECORD_AUDIO",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "VIBRATE",
+        "RECEIVE_BOOT_COMPLETED",
+        "INTERNET",
+        "ACCESS_NETWORK_STATE",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ]
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "VENTURE uses your camera for content creation and live streaming."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#7C3AED"
+        }
+      ],
+      "expo-secure-store",
+      "expo-av",
+      "@stripe/stripe-react-native",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "VENTURE accesses your photo library to let you share photos and videos.",
+          "cameraPermission": "VENTURE uses your camera to take photos and record videos for posting."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "VENTURE uses your location so you can tag where your posts were created."
+        }
+      ]
+    ],
+    "scheme": "venture",
+    "extra": {
+      "eas": {
+        "projectId": "your-eas-project-id"
+      }
+    },
+    "platforms": [
+      "ios",
+      "android",
+      "web"
+    ],
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/favicon.png",
+      "backgroundColor": "#0A0A0F",
+      "themeColor": "#7C3AED",
+      "name": "VENTURE",
+      "shortName": "VENTURE",
+      "description": "VENTURE Creator Platform"
+    }
+  }
+}

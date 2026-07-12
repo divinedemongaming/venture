@@ -1,0 +1,50 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:     #0F1420;
+  --card:   #1A2035;
+  --orange: #FF6B35;
+  --yellow: #FFD23F;
+  --green:  #3ECFB0;
+  --blue:   #4FACFE;
+  --purple: #A78BFA;
+  --pink:   #F472B6;
+  --text:   #FFFFFF;
+  --muted:  #94A3B8;
+  --border: rgba(255,255,255,0.08);
+}
+
+html, body, #root {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+  overflow-x: hidden;
+}
+
+button { cursor: pointer; border: none; background: none; font-family: inherit; }
+input  { font-family: inherit; }
+a      { text-decoration: none; color: inherit; }
+
+/* Smooth scrolling */
+* { -webkit-overflow-scrolling: touch; }
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 2px; }
+
+/* Animations */
+@keyframes fadeIn   { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes pulse    { 0%,100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+@keyframes spin     { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@keyframes bounceIn { 0% { transform: scale(0.3); opacity: 0; } 60% { transform: scale(1.1); } 80% { transform: scale(0.95); } 100% { transform: scale(1); opacity: 1; } }
+
+.fade-in   { animation: fadeIn 0.25s ease both; }
+.bounce-in { animation: bounceIn 0.45s ease both; }
+
+/* Mobile-first — full width tap targets */
+@media (max-width: 480px) {
+  button, a { min-height: 44px; display: inline-flex; align-items: center; }
+}
