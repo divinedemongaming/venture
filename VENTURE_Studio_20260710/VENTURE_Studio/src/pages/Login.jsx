@@ -92,6 +92,11 @@ export default function Login() {
 
         <div style={{ textAlign: 'center', marginTop: 24 }}>
           <a href="venture://" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, color: C.accent, fontSize: 13, textDecoration: 'none' }}>
+        <div style={{ textAlign: 'center', marginTop: 24 }}>
+          <span style={{ color: C.muted, fontSize: 13 }}>Don't have an account? </span>
+          <a href="/signup" style={{ color: C.accent, fontSize: 13, textDecoration: 'none', fontWeight: 600, cursor: 'pointer' }}>Sign up</a>
+        </div>
+
             <Smartphone size={16} /> Open VENTURE Mobile App
           </a>
         </div>
