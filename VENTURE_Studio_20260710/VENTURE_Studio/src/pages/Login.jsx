@@ -91,12 +91,12 @@ export default function Login() {
         </form>
 
         <div style={{ textAlign: 'center', marginTop: 24 }}>
-          <a href="venture://" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, color: C.accent, fontSize: 13, textDecoration: 'none' }}>
-        <div style={{ textAlign: 'center', marginTop: 24 }}>
           <span style={{ color: C.muted, fontSize: 13 }}>Don't have an account? </span>
           <a href="/signup" style={{ color: C.accent, fontSize: 13, textDecoration: 'none', fontWeight: 600, cursor: 'pointer' }}>Sign up</a>
         </div>
 
+        <div style={{ textAlign: 'center', marginTop: 16, paddingTop: 16, borderTop: `1px solid ${C.border}` }}>
+          <a href="venture://" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, color: C.accent, fontSize: 13, textDecoration: 'none' }}>
             <Smartphone size={16} /> Open VENTURE Mobile App
           </a>
         </div>
@@ -104,3 +104,4 @@ export default function Login() {
     </div>
   );
 }
+
