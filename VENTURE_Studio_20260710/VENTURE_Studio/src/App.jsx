@@ -18,6 +18,7 @@ import Scheduler    from './pages/Scheduler';
 import StreamStudio from './pages/StreamStudio';
 import Settings     from './pages/Settings';
 import Login        from './pages/Login';
+import Signup       from './pages/Signup';
 
 function LoadingScreen() {
   return (
@@ -81,7 +82,11 @@ export default function App() {
   useEffect(() => { checkAuth(); }, []);
 
   if (loading) return <LoadingScreen />;
-  if (!user && !token) return <Routes><Route path="*" element={<Login />} /></Routes>;
+  if (!user && !token) return <Routes>
+    <Route path="/login" element={<Login />} />
+    <Route path="/signup" element={<Signup />} />
+    <Route path="*" element={<Navigate to="/login" replace />} />
+  </Routes>;
   if (token && !user)  return <LoadingScreen />;
 
   return (
@@ -102,3 +107,4 @@ export default function App() {
     </Layout>
   );
 }
+

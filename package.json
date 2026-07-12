@@ -1,0 +1,16 @@
+{
+  "name": "venture-backend",
+  "version": "1.0.0",
+  "description": "VENTURE Backend - Creator Platform API",
+  "main": "VENTURE_Backend/src/index.js",
+  "scripts": {
+    "start": "cd VENTURE_Backend && npm start",
+    "dev": "cd VENTURE_Backend && npm run dev",
+    "build": "cd VENTURE_Backend && npm install && npm run build || true"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {}
+}
+
