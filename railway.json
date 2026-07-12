@@ -1,0 +1,21 @@
+{
+  "$schema": "https://railway.app/schema.json",
+  "services": {
+    "backend": {
+      "source": {
+        "rootDirectory": "VENTURE_Backend"
+      }
+    },
+    "studio": {
+      "source": {
+        "rootDirectory": "VENTURE_Studio_20260710/VENTURE_Studio"
+      }
+    },
+    "kids": {
+      "source": {
+        "rootDirectory": "VENTURE_Kids_20260710/VENTURE_Kids"
+      }
+    }
+  }
+}
+
