@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>VENTURE Feed</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #0A0A0F 0%, #1a1a2e 100%);
+      color: #fff;
+      min-height: 100vh;
+    }
+    .wrapper { display: flex; min-height: 100vh; }
+    .sidebar {
+      width: 280px;
+      background: rgba(26, 26, 46, 0.6);
+      border-right: 1px solid rgba(124, 58, 237, 0.2);
+      padding: 24px;
+      height: 100vh;
+      overflow-y: auto;
+      position: sticky;
+      top: 0;
+    }
+    .logo {
+      width: 50px;
+      height: 50px;
+      background: linear-gradient(135deg, #7C3AED, #06B6D4);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      font-weight: 800;
+      margin-bottom: 40px;
+    }
+    .nav { display: flex; flex-direction: column; gap: 16px; }
+    .nav-item {
+      padding: 12px 16px;
+      border-radius: 8px;
+      text-decoration: none;
+      color: #94A3B8;
+      cursor: pointer;
+      border: none;
+      background: none;
+      font-size: 16px;
+      width: 100%;
+      text-align: left;
+      transition: all 0.3s;
+    }
+    .nav-item:hover { background: rgba(124, 58, 237, 0.1); color: #fff; }
+    .nav-item.active {
+      background: linear-gradient(135deg, #7C3AED, #06B6D4);
+      color: #fff;
+    }
+    .main { flex: 1; display: flex; flex-direction: column; }
+    .header {
+      background: rgba(26, 26, 46, 0.8);
+      border-bottom: 1px solid rgba(124, 58, 237, 0.2);
+      padding: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      max-width: 800px;
+      margin: 0 auto;
+      width: 100%;
+    }
+    .page { display: none; }
+    .page.active { display: block; }
+    .post-card {
+      background: rgba(26, 26, 46, 0.8);
+      border: 1px solid rgba(124, 58, 237, 0.2);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+    .post-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+    .avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #7C3AED, #06B6D4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 18px;
+    }
+    .post-info { flex: 1; }
+    .post-author { font-weight: 600; color: #fff; }
+    .post-time { font-size: 12px; color: #94A3B8; }
+    .post-content { margin-bottom: 16px; line-height: 1.6; color: #E2E8F0; }
+    .post-actions {
+      display: flex;
+      gap: 24px;
+      border-top: 1px solid rgba(124, 58, 237, 0.1);
+      padding-top: 12px;
+    }
+    .action-btn {
+      background: none;
+      border: none;
+      color: #94A3B8;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.3s;
+    }
+    .action-btn:hover { color: #7C3AED; }
+    .action-btn.liked { color: #EF4444; }
+    .btn {
+      padding: 8px 16px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.3s;
+      background: linear-gradient(135deg, #7C3AED, #06B6D4);
+      color: #fff;
+    }
+    .btn:hover { transform: translateY(-2px); }
+    .form-group { margin-bottom: 16px; }
+    .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: #E2E8F0; }
+    .form-group textarea {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #374151;
+      border-radius: 8px;
+      background: rgba(15, 23, 42, 0.8);
+      color: #fff;
+      font-family: inherit;
+      resize: vertical;
+      min-height: 120px;
+    }
+    .form-group textarea:focus { outline: none; border-color: #7C3AED; box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1); }
+    .profile-header {
+      background: rgba(26, 26, 46, 0.8);
+      border: 1px solid rgba(124, 58, 237, 0.2);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+      text-align: center;
+    }
+    .profile-avatar {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #7C3AED, #06B6D4);
+      margin: 0 auto 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      font-weight: 600;
+    }
+    .profile-stats {
+      display: flex;
+      justify-content: center;
+      gap: 32px;
+      margin-top: 16px;
+    }
+    .stat { text-align: center; }
+    .stat-value { font-size: 24px; font-weight: 600; }
+    .stat-label { color: #94A3B8; font-size: 12px; }
+    .message {
+      background: rgba(34, 197, 94, 0.1);
+      border: 1px solid #22C55E;
+      color: #86EFAC;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+    }
+    @media (max-width: 768px) {
+      .wrapper { flex-direction: column; }
+      .sidebar { width: 100%; height: auto; }
+      .nav { flex-direction: row; overflow-x: auto; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="sidebar">
+      <div class="logo">V</div>
+      <div class="nav">
+        <button class="nav-item active" onclick="setPage('feed')">🏠 Feed</button>
+        <button class="nav-item" onclick="setPage('profile')">👤 Profile</button>
+        <button class="nav-item" onclick="setPage('compose')">✏️ Compose</button>
+        <hr style="border: none; border-top: 1px solid rgba(124, 58, 237, 0.2); margin: 16px 0;">
+        <a href="https://venture-studio-production-4535.up.railway.app" class="nav-item" style="text-align: center; background: rgba(124, 58, 237, 0.1); color: #7C3AED;">📊 Creator Studio</a>
+        <button class="nav-item" onclick="logout()">🚪 Logout</button>
+      </div>
+    </div>
+    
+    <div class="main">
+      <div class="header">
+        <h1>VENTURE</h1>
+        <div id="user-info" style="font-size: 14px;"></div>
+      </div>
+      
+      <div class="content">
+        <div id="feed-page" class="page active">
+          <div id="feed-container" style="display: flex; flex-direction: column; gap: 16px;"></div>
+        </div>
+        
+        <div id="profile-page" class="page">
+          <div id="profile-container"></div>
+        </div>
+        
+        <div id="compose-page" class="page">
+          <div style="background: rgba(26, 26, 46, 0.8); border: 1px solid rgba(124, 58, 237, 0.2); border-radius: 12px; padding: 20px;">
+            <h2 style="margin-bottom: 20px;">Create a Post</h2>
+            <form id="compose-form">
+              <div class="form-group">
+                <label>What's on your mind?</label>
+                <textarea id="post-content" placeholder="Share your thoughts..." required></textarea>
+              </div>
+              <button type="submit" class="btn" style="width: 100%;">Post</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    const token = localStorage.getItem('venture_token');
+    if (!token) window.location.href = '/login';
+    
+    let currentUser = null;
+    let allPosts = [];
+    
+    async function loadUserProfile() {
+      try {
+        const res = await fetch('/api/users/me', {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        if (!res.ok) throw new Error('Failed to load profile');
+        currentUser = await res.json();
+        document.getElementById('user-info').textContent = `@${currentUser.username}`;
+        renderProfile();
+      } catch (err) {
+        console.error(err);
+      }
+    }
+    
+    async function loadFeed() {
+      try {
+        const res = await fetch('/api/posts/feed', {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        if (!res.ok) throw new Error('Failed to load feed');
+        allPosts = await res.json();
+        renderFeed();
+      } catch (err) {
+        console.error(err);
+      }
+    }
+    
+    function renderFeed() {
+      const container = document.getElementById('feed-container');
+      if (allPosts.length === 0) {
+        container.innerHTML = '<div class="message">No posts yet. Be the first to create one!</div>';
+        return;
+      }
+      container.innerHTML = allPosts.map(post => `
+        <div class="post-card">
+          <div class="post-header">
+            <div class="avatar">${post.author.charAt(0).toUpperCase()}</div>
+            <div class="post-info">
+              <div class="post-author">@${post.author}</div>
+              <div class="post-time">${new Date(post.createdAt).toLocaleDateString()}</div>
+            </div>
+          </div>
+          <div class="post-content">${post.content}</div>
+          <div class="post-actions">
+            <button class="action-btn ${post.liked ? 'liked' : ''}" onclick="toggleLike(${post.id})">❤️ ${post.likes}</button>
+            <button class="action-btn">💬 0</button>
+            <button class="action-btn">📤 Share</button>
+          </div>
+        </div>
+      `).join('');
+    }
+    
+    function renderProfile() {
+      const container = document.getElementById('profile-container');
+      const userPostCount = allPosts.filter(p => p.authorId === currentUser.id).length;
+      container.innerHTML = `
+        <div class="profile-header">
+          <div class="profile-avatar">${currentUser.displayName.charAt(0).toUpperCase()}</div>
+          <div style="font-size: 24px; font-weight: 600; margin-bottom: 4px;">${currentUser.displayName}</div>
+          <div style="color: #7C3AED; margin-bottom: 12px;">@${currentUser.username}</div>
+          <div class="profile-stats">
+            <div class="stat">
+              <div class="stat-value">${userPostCount}</div>
+              <div class="stat-label">Posts</div>
+            </div>
+            <div class="stat">
+              <div class="stat-value">${currentUser.followers || 0}</div>
+              <div class="stat-label">Followers</div>
+            </div>
+            <div class="stat">
+              <div class="stat-value">${currentUser.following || 0}</div>
+              <div class="stat-label">Following</div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+    
+    async function toggleLike(postId) {
+      try {
+        await fetch(`/api/posts/${postId}/like`, {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        loadFeed();
+      } catch (err) {
+        console.error(err);
+      }
+    }
+    
+    function setPage(page) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      document.getElementById(page + '-page').classList.add('active');
+      event.target.classList.add('active');
+    }
+    
+    function logout() {
+      localStorage.removeItem('venture_token');
+      window.location.href = '/';
+    }
+    
+    document.getElementById('compose-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const content = document.getElementById('post-content').value;
+      try {
+        await fetch('/api/posts', {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer ' + token,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ content })
+        });
+        document.getElementById('post-content').value = '';
+        loadFeed();
+        setPage('feed');
+      } catch (err) {
+        console.error(err);
+      }
+    });
+    
+    loadUserProfile();
+    loadFeed();
+  </script>
+</body>
+</html>
+
