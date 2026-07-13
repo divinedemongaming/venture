@@ -1,20 +1,23 @@
 :80 {
   root /app/dist
   
-  # SPA routing — fallback to index.html for all 404s
-  try_files {path} /index.html
-
-  # Serve static assets with caching
-  file_server {
-    hide .env .env.* .git* .DS_Store
+  # Handle static assets
+  @static {
+    path /assets/*
   }
-
+  
+  # Everything else falls back to index.html for React routing
+  @spa {
+    not @static
+    not file
+  }
+  
+  rewrite @spa /index.html
+  
+  # Serve files
+  file_server
+  
   # Compression
   encode gzip
-
-  # Log
-  log {
-    level warn
-  }
 }
 
