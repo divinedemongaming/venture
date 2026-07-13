@@ -18,7 +18,7 @@ import { io } from 'socket.io-client';
 import * as SecureStore from 'expo-secure-store';
 import { useNotificationStore } from '../store/notificationStore';
 
-const API_URL = process.env.API_URL || 'http://localhost:3000';
+const API_URL = "https://venture-production.up.railway.app";
 let socket = null;
 
 export const connectSocket = async () => {
