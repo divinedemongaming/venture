@@ -22,11 +22,19 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const compression = require('compression');
+const fs = require('fs');
 
 const logger = require('./utils/logger');
 
 const app = express();
 const server = http.createServer(app);
+
+// ── IN-MEMORY STORAGE ─────────────────────────
+const users = new Map();
+const posts = new Map();
+const likes = new Set();
+const sessions = new Map();
+let postIdCounter = 1;
 
 // ── SECURITY HEADERS ──────────────────────────
 app.use(helmet({
@@ -70,6 +78,34 @@ app.use(compression());
 app.use(morgan('combined', { stream: { write: msg => logger.info(msg.trim()) } }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// ── SESSION HELPERS ──────────────────────────
+function createSession(userId) {
+  const token = 'token_' + Math.random().toString(36).slice(2) + '_' + Date.now();
+  sessions.set(token, { userId, createdAt: Date.now() });
+  return token;
+}
+
+function getSessionUser(token) {
+  const session = sessions.get(token);
+  if (!session || Date.now() - session.createdAt > 7 * 24 * 60 * 60 * 1000) {
+    return null;
+  }
+  return session.userId;
+}
+
+// ── AUTH MIDDLEWARE ──────────────────────────
+function requireAuth(req, res, next) {
+  const auth = req.headers.authorization;
+  if (!auth) return res.status(401).json({ error: 'Unauthorized' });
+
+  const token = auth.replace('Bearer ', '');
+  const userId = getSessionUser(token);
+  if (!userId) return res.status(401).json({ error: 'Invalid token' });
+
+  req.userId = userId;
+  next();
+}
 
 // ── HOME PAGE ──────────────────────────────────
 app.get('/', (req, res) => {
@@ -140,14 +176,6 @@ app.get('/', (req, res) => {
           transform: translateY(-2px);
           box-shadow: 0 10px 25px rgba(124, 58, 237, 0.3);
         }
-        .btn-secondary {
-          border: 2px solid #374151;
-          color: #94A3B8;
-        }
-        .btn-secondary:hover {
-          border-color: #7C3AED;
-          color: #fff;
-        }
         .status {
           margin-top: 50px;
           padding: 20px;
@@ -172,27 +200,32 @@ app.get('/', (req, res) => {
         <div class="logo">V</div>
         <h1>VENTURE</h1>
         <p>Creator Platform for Gaming, Content, & Community</p>
-        
+
         <div class="links">
-          <a href="/signup" class="btn-primary">
-            Join as Creator
-          </a>
-          <a href="https://venture-kids-production.up.railway.app" class="btn-primary">
-            Watch on Kids
-          </a>
-          <a href="/api/auth/register" class="btn-secondary">
-            API Register
-          </a>
+          <a href="/signup" class="btn-primary">Join as Creator</a>
+          <a href="/login" class="btn-primary">Sign In</a>
+          <a href="https://venture-kids-production.up.railway.app" class="btn-primary">Watch on Kids</a>
         </div>
 
         <div class="status">
           <div class="status-title">✓ System Online</div>
-          <div class="status-text">Backend API is running and accepting connections</div>
+          <div class="status-text">Full social media platform live - sign up to get started!</div>
         </div>
       </div>
     </body>
     </html>
   `);
+});
+
+// ── APP PAGE (PROTECTED) ────────────────────────
+app.get('/app', (req, res) => {
+  try {
+    const templatePath = require.main.filename.replace('index.js', 'app-template.html');
+    let html = fs.readFileSync(__dirname + '/app-template.html', 'utf8');
+    res.send(html);
+  } catch (err) {
+    res.status(500).send('Error loading app');
+  }
 });
 
 // ── SIGNUP PAGE ────────────────────────────────
@@ -275,12 +308,6 @@ app.get('/signup', (req, res) => {
           border-color: #7C3AED;
           box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
         }
-        .password-requirements {
-          font-size: 12px;
-          color: #94A3B8;
-          margin-top: 8px;
-          line-height: 1.6;
-        }
         button {
           width: 100%;
           padding: 12px;
@@ -314,9 +341,6 @@ app.get('/signup', (req, res) => {
           text-decoration: none;
           font-weight: 600;
         }
-        .link a:hover {
-          text-decoration: underline;
-        }
         .error {
           background: rgba(239, 68, 68, 0.1);
           border: 1px solid #EF4444;
@@ -345,91 +369,277 @@ app.get('/signup', (req, res) => {
           <div class="logo">V</div>
           <h1>Create Account</h1>
           <p class="subtitle">Join VENTURE and start creating</p>
-          
+
           <div id="error" class="error"></div>
           <div id="success" class="success"></div>
-          
+
           <form id="signupForm">
             <div class="form-group">
               <label for="displayName">Display Name</label>
               <input type="text" id="displayName" name="displayName" placeholder="John Creator" required>
             </div>
-            
+
             <div class="form-group">
               <label for="username">Username</label>
               <input type="text" id="username" name="username" placeholder="johncreator" required pattern="[a-zA-Z0-9_]+" title="Letters, numbers, and underscores only">
             </div>
-            
+
             <div class="form-group">
               <label for="email">Email</label>
               <input type="email" id="email" name="email" placeholder="you@example.com" required>
             </div>
-            
+
             <div class="form-group">
               <label for="password">Password</label>
               <input type="password" id="password" name="password" placeholder="••••••••" required minlength="8">
-              <div class="password-requirements">
-                • At least 8 characters<br>
-                • 1 uppercase letter<br>
-                • 1 lowercase letter<br>
-                • 1 number<br>
-                • 1 special character (@\$!%*?&_#)
-              </div>
             </div>
-            
+
             <button type="submit">Sign Up</button>
           </form>
-          
+
           <div class="link">
-            Already have an account? <a href="/">Back to Home</a>
+            Already have an account? <a href="/login">Sign In</a>
           </div>
         </div>
       </div>
-      
+
       <script>
         document.getElementById('signupForm').addEventListener('submit', async (e) => {
           e.preventDefault();
-          
+
           const displayName = document.getElementById('displayName').value;
           const username = document.getElementById('username').value;
           const email = document.getElementById('email').value;
           const password = document.getElementById('password').value;
-          
+
           const errorDiv = document.getElementById('error');
           const successDiv = document.getElementById('success');
           const button = e.target.querySelector('button');
-          
+
           errorDiv.style.display = 'none';
           successDiv.style.display = 'none';
           button.disabled = true;
           button.textContent = 'Creating Account...';
-          
+
           try {
             const response = await fetch('/api/auth/register', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ displayName, username, email, password })
             });
-            
+
             const data = await response.json();
-            
+
             if (!response.ok) {
-              throw new Error(data.error || data.errors?.[0]?.msg || 'Sign up failed');
+              throw new Error(data.error || 'Sign up failed');
             }
-            
-            successDiv.textContent = '✓ Account created! Welcome to VENTURE.';
+
+            localStorage.setItem('venture_token', data.token);
+            successDiv.textContent = '✓ Account created! Redirecting to your feed...';
             successDiv.style.display = 'block';
-            document.getElementById('signupForm').reset();
-            
+
             setTimeout(() => {
-              window.location.href = '/';
-            }, 2000);
+              window.location.href = '/app';
+            }, 1500);
           } catch (err) {
             errorDiv.textContent = '✗ ' + err.message;
             errorDiv.style.display = 'block';
-          } finally {
             button.disabled = false;
             button.textContent = 'Sign Up';
+          }
+        });
+      </script>
+    </body>
+    </html>
+  `);
+});
+
+// ── LOGIN PAGE ────────────────────────────────
+app.get('/login', (req, res) => {
+  res.send(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>Sign In - VENTURE</title>
+      <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+          background: linear-gradient(135deg, #0A0A0F 0%, #1a1a2e 100%);
+          color: #fff;
+          min-height: 100vh;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 20px;
+        }
+        .container {
+          max-width: 500px;
+          width: 100%;
+        }
+        .card {
+          background: rgba(26, 26, 46, 0.8);
+          backdrop-filter: blur(10px);
+          border: 1px solid rgba(124, 58, 237, 0.2);
+          border-radius: 16px;
+          padding: 40px;
+        }
+        .logo {
+          width: 60px;
+          height: 60px;
+          background: linear-gradient(135deg, #7C3AED, #06B6D4);
+          border-radius: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 32px;
+          font-weight: 800;
+          margin: 0 auto 24px;
+        }
+        h1 {
+          font-size: 24px;
+          text-align: center;
+          margin-bottom: 8px;
+        }
+        .subtitle {
+          text-align: center;
+          color: #94A3B8;
+          margin-bottom: 32px;
+          font-size: 14px;
+        }
+        .form-group {
+          margin-bottom: 20px;
+        }
+        label {
+          display: block;
+          margin-bottom: 8px;
+          font-weight: 500;
+          font-size: 14px;
+          color: #E2E8F0;
+        }
+        input {
+          width: 100%;
+          padding: 12px 16px;
+          border: 1px solid #374151;
+          border-radius: 8px;
+          background: rgba(15, 23, 42, 0.8);
+          color: #fff;
+          font-size: 14px;
+          transition: all 0.3s;
+        }
+        input:focus {
+          outline: none;
+          border-color: #7C3AED;
+          box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+        }
+        button {
+          width: 100%;
+          padding: 12px;
+          margin-top: 24px;
+          background: linear-gradient(135deg, #7C3AED, #06B6D4);
+          color: #fff;
+          border: none;
+          border-radius: 8px;
+          font-weight: 600;
+          font-size: 16px;
+          cursor: pointer;
+          transition: all 0.3s;
+        }
+        button:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 10px 25px rgba(124, 58, 237, 0.3);
+        }
+        button:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+        .link {
+          text-align: center;
+          margin-top: 20px;
+          color: #94A3B8;
+          font-size: 14px;
+        }
+        .link a {
+          color: #7C3AED;
+          text-decoration: none;
+          font-weight: 600;
+        }
+        .error {
+          background: rgba(239, 68, 68, 0.1);
+          border: 1px solid #EF4444;
+          color: #FECACA;
+          padding: 12px;
+          border-radius: 8px;
+          margin-bottom: 20px;
+          display: none;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="card">
+          <div class="logo">V</div>
+          <h1>Welcome Back</h1>
+          <p class="subtitle">Sign in to your VENTURE account</p>
+
+          <div id="error" class="error"></div>
+
+          <form id="loginForm">
+            <div class="form-group">
+              <label for="email">Email or Username</label>
+              <input type="text" id="email" name="email" placeholder="you@example.com" required>
+            </div>
+
+            <div class="form-group">
+              <label for="password">Password</label>
+              <input type="password" id="password" name="password" placeholder="••••••••" required>
+            </div>
+
+            <button type="submit">Sign In</button>
+          </form>
+
+          <div class="link">
+            Don't have an account? <a href="/signup">Sign Up</a>
+          </div>
+        </div>
+      </div>
+
+      <script>
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+          e.preventDefault();
+
+          const identifier = document.getElementById('email').value;
+          const password = document.getElementById('password').value;
+
+          const errorDiv = document.getElementById('error');
+          const button = e.target.querySelector('button');
+
+          errorDiv.style.display = 'none';
+          button.disabled = true;
+          button.textContent = 'Signing In...';
+
+          try {
+            const response = await fetch('/api/auth/login', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ identifier, password })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+              throw new Error(data.error || 'Sign in failed');
+            }
+
+            localStorage.setItem('venture_token', data.token);
+            window.location.href = '/app';
+          } catch (err) {
+            errorDiv.textContent = '✗ ' + err.message;
+            errorDiv.style.display = 'block';
+            button.disabled = false;
+            button.textContent = 'Sign In';
           }
         });
       </script>
@@ -448,46 +658,139 @@ app.get('/health', (req, res) => {
   });
 });
 
-// ── AUTH API (MINIMAL) ─────────────────────────
+// ── AUTH API ──────────────────────────────────
 app.post('/api/auth/register', (req, res) => {
   const { username, email, password, displayName } = req.body;
-  
-  // Minimal validation
-  if (!username || !email || !password) {
+
+  if (!username || !email || !password || !displayName) {
     return res.status(400).json({ error: 'Missing required fields' });
   }
-  
-  if (password.length < 8) {
-    return res.status(400).json({ error: 'Password must be at least 8 characters' });
+
+  if (users.has(username.toLowerCase())) {
+    return res.status(400).json({ error: 'Username already taken' });
   }
-  
-  // TODO: Connect to database when available
-  // For now, just return success to unblock frontend
+
+  const userId = 'user_' + Date.now();
+  users.set(username.toLowerCase(), {
+    id: userId,
+    username: username.toLowerCase(),
+    displayName,
+    email,
+    password,
+    followers: [],
+    following: [],
+    createdAt: new Date()
+  });
+
+  const token = createSession(userId);
+
   res.status(201).json({
     success: true,
-    message: 'Account creation queued - database integration coming soon',
+    token,
     user: {
-      id: 'temp-' + Date.now(),
+      id: userId,
       username: username.toLowerCase(),
-      email,
-      displayName
+      displayName,
+      email
     }
   });
 });
 
 app.post('/api/auth/login', (req, res) => {
   const { identifier, password } = req.body;
-  
+
   if (!identifier || !password) {
     return res.status(400).json({ error: 'Email and password required' });
   }
-  
-  // TODO: Connect to database when available
-  res.status(200).json({
+
+  let user = Array.from(users.values()).find(u =>
+    (u.username === identifier.toLowerCase() || u.email === identifier) &&
+    u.password === password
+  );
+
+  if (!user) {
+    return res.status(401).json({ error: 'Invalid credentials' });
+  }
+
+  const token = createSession(user.id);
+
+  res.json({
     success: true,
-    message: 'Login coming soon - database integration in progress',
-    token: 'temp-token-' + Date.now()
+    token,
+    user: {
+      id: user.id,
+      username: user.username,
+      displayName: user.displayName,
+      email: user.email
+    }
   });
+});
+
+// ── USER API ──────────────────────────────────
+app.get('/api/users/me', requireAuth, (req, res) => {
+  const user = Array.from(users.values()).find(u => u.id === req.userId);
+  if (!user) return res.status(404).json({ error: 'User not found' });
+
+  res.json({
+    id: user.id,
+    username: user.username,
+    displayName: user.displayName,
+    email: user.email,
+    followers: user.followers.length,
+    following: user.following.length
+  });
+});
+
+// ── POSTS API ─────────────────────────────────
+app.post('/api/posts', requireAuth, (req, res) => {
+  const { content } = req.body;
+  if (!content) return res.status(400).json({ error: 'Content required' });
+
+  const postId = postIdCounter++;
+  const user = Array.from(users.values()).find(u => u.id === req.userId);
+
+  posts.set(postId, {
+    id: postId,
+    authorId: req.userId,
+    author: user.username,
+    content,
+    likes: 0,
+    comments: [],
+    createdAt: new Date(),
+    liked: false
+  });
+
+  res.status(201).json(posts.get(postId));
+});
+
+app.get('/api/posts/feed', requireAuth, (req, res) => {
+  const feedPosts = Array.from(posts.values())
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    .map(post => ({
+      ...post,
+      commentCount: post.comments.length
+    }));
+
+  res.json(feedPosts);
+});
+
+app.post('/api/posts/:id/like', requireAuth, (req, res) => {
+  const postId = parseInt(req.params.id);
+  const post = posts.get(postId);
+  if (!post) return res.status(404).json({ error: 'Post not found' });
+
+  const likeKey = `${req.userId}_${postId}`;
+  if (likes.has(likeKey)) {
+    likes.delete(likeKey);
+    post.likes--;
+    post.liked = false;
+  } else {
+    likes.add(likeKey);
+    post.likes++;
+    post.liked = true;
+  }
+
+  res.json(post);
 });
 
 // ── 404 ───────────────────────────────────────
@@ -504,8 +807,8 @@ const PORT = parseInt(process.env.PORT) || 3000;
 
 try {
   server.listen(PORT, '0.0.0.0', () => {
-    logger.info(`🚀 VENTURE API running on port ${PORT}`);
-    logger.info(`📡 Minimal mode - full database features coming soon`);
+    logger.info(`🚀 VENTURE Social Media Platform running on port ${PORT}`);
+    logger.info(`📡 Features: Feed, Posts, Profile, Like system - all live!`);
   });
 } catch (err) {
   logger.error('Failed to start server', err);
