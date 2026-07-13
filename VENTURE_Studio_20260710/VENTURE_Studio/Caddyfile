@@ -1,4 +1,4 @@
-:80 {
+:{$PORT:3000} {
   root /app/dist
   
   # Serve index.html for SPA routing
