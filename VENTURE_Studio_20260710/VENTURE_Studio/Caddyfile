@@ -1,18 +1,13 @@
 :80 {
   root /app/dist
   
-  # Handle static assets
-  @static {
-    path /assets/*
-  }
-  
-  # Everything else falls back to index.html for React routing
-  @spa {
-    not @static
+  # Serve index.html for SPA routing
+  @notStatic {
+    not path /assets/*
     not file
   }
   
-  rewrite @spa /index.html
+  rewrite @notStatic /index.html
   
   # Serve files
   file_server
