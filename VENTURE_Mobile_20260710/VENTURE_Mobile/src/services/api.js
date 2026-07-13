@@ -19,7 +19,7 @@ import * as SecureStore from 'expo-secure-store';
 import { buildKidsPrivacyHeaders, STRIP_TRACKING_PARAMS } from '../utils/kidsSession';
 import { useAuthStore } from '../store/authStore';
 
-const API_URL = process.env.API_URL || 'http://localhost:3000';
+const API_URL = "https://venture-production.up.railway.app";
 
 export const api = axios.create({
   baseURL: `${API_URL}/api`,
