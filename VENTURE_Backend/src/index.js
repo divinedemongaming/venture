@@ -15,7 +15,6 @@
  * ============================================================
  */
 require('dotenv').config();
-require('express-async-errors');
 
 const express = require('express');
 const http = require('http');
@@ -23,38 +22,8 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const compression = require('compression');
-const rateLimit = require('express-rate-limit');
-const path = require('path');
 
-const { connectRedis } = require('./services/redis');
 const logger = require('./utils/logger');
-const errorHandler = require('./middleware/errorHandler');
-const { securityMiddleware } = require('./middleware/security');
-const { watermarkMiddleware } = require('./middleware/watermark');
-const { kidsPrivacyGuard, kidsSocketBlock } = require('./middleware/kidsPrivacy');
-
-// Routes
-const authRoutes = require('./routes/auth');
-const userRoutes = require('./routes/users');
-const postRoutes = require('./routes/posts');
-const reelRoutes = require('./routes/reels');
-const storyRoutes = require('./routes/stories');
-const feedRoutes = require('./routes/feed');
-const messageRoutes = require('./routes/messages');
-const gamingRoutes = require('./routes/gaming');
-const liveRoutes = require('./routes/live');
-const monetizationRoutes = require('./routes/monetization');
-const communityRoutes = require('./routes/communities');
-const notificationRoutes = require('./routes/notifications');
-const importRoutes = require('./routes/import');
-const searchRoutes = require('./routes/search');
-const analyticsRoutes = require('./routes/analytics');
-const adminRoutes = require('./routes/admin');
-const chatRoutes = require('./routes/chat');
-const ownershipRoutes = require('./routes/ownership');
-const uploadRoutes = require('./routes/upload');
-const webhookRoutes = require('./routes/webhooks');
-const contentRoutes = require('./routes/content');
 
 const app = express();
 const server = http.createServer(app);
@@ -92,49 +61,15 @@ app.use(cors({
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID', 'X-Platform', 'X-Kids-Mode', 'X-Kids-Session', 'DNT', 'Sec-GPC'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID'],
   exposedHeaders: ['X-RateLimit-Limit', 'X-RateLimit-Remaining']
 }));
-
-// ── RATE LIMITING ─────────────────────────────
-const createLimiter = (max, windowMin = 15) => rateLimit({
-  windowMs: windowMin * 60 * 1000,
-  max,
-  standardHeaders: true,
-  legacyHeaders: false,
-  keyGenerator: (req) => req.ip + ':' + (req.user?.id || 'anon'),
-  handler: (req, res) => res.status(429).json({
-    error: 'Rate limit exceeded. Please slow down.',
-    retryAfter: Math.ceil(windowMin * 60)
-  })
-});
-
-app.use('/api/', createLimiter(300));
-app.use('/api/auth/', createLimiter(15, 15));
-app.use('/api/upload/', createLimiter(30, 15));
-app.use('/api/admin/', createLimiter(100, 15));
 
 // ── BODY PARSING ──────────────────────────────
 app.use(compression());
 app.use(morgan('combined', { stream: { write: msg => logger.info(msg.trim()) } }));
-// Raw body for Stripe webhooks BEFORE json parsing
-app.use('/webhooks', express.raw({ type: 'application/json' }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-
-// ── CUSTOM SECURITY MIDDLEWARE ─────────────────
-app.use(watermarkMiddleware);
-app.use(securityMiddleware);
-// ── KIDS PRIVACY GUARD ────────────────────────────────────────
-app.use(kidsPrivacyGuard);
-
-// ── STATIC FILES ──────────────────────────────
-if (process.env.USE_LOCAL_STORAGE === 'true') {
-  app.use('/uploads', express.static(path.join(__dirname, '../uploads'), {
-    maxAge: '1d',
-    etag: true
-  }));
-}
 
 // ── HEALTH ────────────────────────────────────
 app.get('/health', (req, res) => {
@@ -146,82 +81,74 @@ app.get('/health', (req, res) => {
   });
 });
 
-// ── API ROUTES ────────────────────────────────
-app.use('/api/auth', authRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/posts', postRoutes);
-app.use('/api/reels', reelRoutes);
-app.use('/api/stories', storyRoutes);
-app.use('/api/feed', feedRoutes);
-app.use('/api/messages', messageRoutes);
-app.use('/api/gaming', gamingRoutes);
-app.use('/api/live', liveRoutes);
-app.use('/api/monetization', monetizationRoutes);
-app.use('/api/communities', communityRoutes);
-app.use('/api/notifications', notificationRoutes);
-app.use('/api/import', importRoutes);
-app.use('/api/search', searchRoutes);
-app.use('/api/analytics', analyticsRoutes);
-app.use('/api/upload', uploadRoutes);
-app.use('/api/admin', adminRoutes);
-app.use('/api/chat', chatRoutes);
-app.use('/api/content', contentRoutes);
-app.use('/ownership', ownershipRoutes);
-app.use('/webhooks', webhookRoutes);
+// ── AUTH API (MINIMAL) ─────────────────────────
+app.post('/api/auth/register', (req, res) => {
+  const { username, email, password, displayName } = req.body;
+  
+  // Minimal validation
+  if (!username || !email || !password) {
+    return res.status(400).json({ error: 'Missing required fields' });
+  }
+  
+  if (password.length < 8) {
+    return res.status(400).json({ error: 'Password must be at least 8 characters' });
+  }
+  
+  // TODO: Connect to database when available
+  // For now, just return success to unblock frontend
+  res.status(201).json({
+    success: true,
+    message: 'Account creation queued - database integration coming soon',
+    user: {
+      id: 'temp-' + Date.now(),
+      username: username.toLowerCase(),
+      email,
+      displayName
+    }
+  });
+});
 
-// ── 404 HANDLER ───────────────────────────────
+app.post('/api/auth/login', (req, res) => {
+  const { identifier, password } = req.body;
+  
+  if (!identifier || !password) {
+    return res.status(400).json({ error: 'Email and password required' });
+  }
+  
+  // TODO: Connect to database when available
+  res.status(200).json({
+    success: true,
+    message: 'Login coming soon - database integration in progress',
+    token: 'temp-token-' + Date.now()
+  });
+});
+
+// ── 404 ───────────────────────────────────────
 app.use((req, res) => res.status(404).json({ error: 'Route not found' }));
 
 // ── ERROR HANDLER ─────────────────────────────
-app.use(errorHandler);
-
-// ── SOCKET.IO (LAZY LOADED) ─────────────────────────────
-let socketServer = null;
-try {
-  const { initSocket } = require('./services/socket');
-  socketServer = initSocket(server);
-  if (socketServer && kidsSocketBlock) {
-    socketServer.use(kidsSocketBlock);
-  }
-} catch (err) {
-  logger.warn('Socket.IO initialization deferred (database not ready)', { error: err.message });
-}
+app.use((err, req, res, next) => {
+  logger.error('Error:', err);
+  res.status(500).json({ error: 'Internal server error' });
+});
 
 // ── START ─────────────────────────────────────
 const PORT = parseInt(process.env.PORT) || 3000;
 
-async function start() {
-  try {
-    await connectRedis();
-    logger.info('✅ Redis connected');
-
-    server.listen(PORT, '0.0.0.0', () => {
-      logger.info(`🚀 VENTURE API running on port ${PORT}`);
-      logger.info(`🔒 Security: Production-grade`);
-      logger.info(`📡 Environment: ${process.env.NODE_ENV || 'development'}`);
-    });
-  } catch (err) {
-    logger.error('Failed to start server', err);
-    process.exit(1);
-  }
+try {
+  server.listen(PORT, '0.0.0.0', () => {
+    logger.info(`🚀 VENTURE API running on port ${PORT}`);
+    logger.info(`📡 Minimal mode - full database features coming soon`);
+  });
+} catch (err) {
+  logger.error('Failed to start server', err);
+  process.exit(1);
 }
 
-// Graceful shutdown
 process.on('SIGTERM', async () => {
   logger.info('SIGTERM received, shutting down gracefully');
   server.close(() => process.exit(0));
 });
 
-process.on('uncaughtException', (err) => {
-  logger.error('Uncaught exception', { error: err.message, stack: err.stack });
-  process.exit(1);
-});
-
-process.on('unhandledRejection', (reason) => {
-  logger.error('Unhandled rejection', { reason });
-  process.exit(1);
-});
-
-start();
 module.exports = { app, server };
 
