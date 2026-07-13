@@ -14,11 +14,13 @@
  *  Contact:  legal@divinedemongaming.com
  * ============================================================
  */
+const express = require('express');
+const router = express.Router();
 const { PrismaClient } = require('@prisma/client');
 const logger = require('../utils/logger');
 const prisma = new PrismaClient();
 
-const stripeWebhook = async (req, res) => {
+router.post('/stripe', async (req, res) => {
   const stripe = process.env.STRIPE_SECRET_KEY ? require('stripe')(process.env.STRIPE_SECRET_KEY) : null;
   if (!stripe) return res.status(200).json({ received: true });
 
@@ -94,6 +96,7 @@ const stripeWebhook = async (req, res) => {
   }
 
   res.json({ received: true });
-};
+});
 
-module.exports = { stripeWebhook };
+module.exports = router;
+

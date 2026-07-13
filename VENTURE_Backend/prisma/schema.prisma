@@ -56,6 +56,10 @@ model User {
   reels             Reel[]
   clips             GameClip[]
   lives             LiveStream[]
+  collections       Collection[]
+  scheduledDrops    ScheduledDrop[]
+  pendingComments   PendingComment[]
+
 
   // Social
   followers         Follow[]  @relation("FollowerRelation")
