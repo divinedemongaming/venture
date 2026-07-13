@@ -1,7 +1,17 @@
 /**
  * ============================================================
- *  VENTURE — Creator Platform with PostgreSQL
+ *  VENTURE — Creator Platform
  *  © 2024 DivineDemonGaming Inc. All Rights Reserved.
+ *
+ *  This software is the exclusive intellectual property of
+ *  DivineDemonGaming Inc. Unauthorized copying, distribution,
+ *  modification, or use of this software, in whole or in part,
+ *  is strictly prohibited without written permission from
+ *  DivineDemonGaming Inc.
+ *
+ *  Owner:    DivineDemonGaming Inc.
+ *  Product:  VENTURE Creator Platform
+ *  Contact:  legal@divinedemongaming.com
  * ============================================================
  */
 require('dotenv').config();
@@ -13,30 +23,18 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const compression = require('compression');
 const fs = require('fs');
-const bcrypt = require('bcryptjs');
 
 const logger = require('./utils/logger');
-const prisma = require('./db');
 
 const app = express();
 const server = http.createServer(app);
 
-// ── SESSION STORAGE ──────────────────────────
+// ── IN-MEMORY STORAGE ─────────────────────────
+const users = new Map();
+const posts = new Map();
+const likes = new Set();
 const sessions = new Map();
-
-function createSession(userId) {
-  const token = 'token_' + Math.random().toString(36).slice(2) + '_' + Date.now();
-  sessions.set(token, { userId, createdAt: Date.now() });
-  return token;
-}
-
-function getSessionUser(token) {
-  const session = sessions.get(token);
-  if (!session || Date.now() - session.createdAt > 7 * 24 * 60 * 60 * 1000) {
-    return null;
-  }
-  return session.userId;
-}
+let postIdCounter = 1;
 
 // ── SECURITY HEADERS ──────────────────────────
 app.use(helmet({
@@ -80,6 +78,21 @@ app.use(compression());
 app.use(morgan('combined', { stream: { write: msg => logger.info(msg.trim()) } }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// ── SESSION HELPERS ──────────────────────────
+function createSession(userId) {
+  const token = 'token_' + Math.random().toString(36).slice(2) + '_' + Date.now();
+  sessions.set(token, { userId, createdAt: Date.now() });
+  return token;
+}
+
+function getSessionUser(token) {
+  const session = sessions.get(token);
+  if (!session || Date.now() - session.createdAt > 7 * 24 * 60 * 60 * 1000) {
+    return null;
+  }
+  return session.userId;
+}
 
 // ── AUTH MIDDLEWARE ──────────────────────────
 function requireAuth(req, res, next) {
@@ -131,9 +144,22 @@ app.get('/', (req, res) => {
           font-weight: 800;
           margin: 0 auto 30px;
         }
-        h1 { font-size: 32px; margin-bottom: 10px; }
-        p { color: #94A3B8; font-size: 16px; margin-bottom: 40px; line-height: 1.5; }
-        .links { display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; }
+        h1 {
+          font-size: 32px;
+          margin-bottom: 10px;
+        }
+        p {
+          color: #94A3B8;
+          font-size: 16px;
+          margin-bottom: 40px;
+          line-height: 1.5;
+        }
+        .links {
+          display: flex;
+          gap: 15px;
+          justify-content: center;
+          flex-wrap: wrap;
+        }
         a {
           padding: 12px 24px;
           border-radius: 8px;
@@ -158,8 +184,15 @@ app.get('/', (req, res) => {
           border-radius: 8px;
           text-align: left;
         }
-        .status-title { color: #22C55E; font-weight: 600; margin-bottom: 8px; }
-        .status-text { color: #86EFAC; font-size: 14px; }
+        .status-title {
+          color: #22C55E;
+          font-weight: 600;
+          margin-bottom: 8px;
+        }
+        .status-text {
+          color: #86EFAC;
+          font-size: 14px;
+        }
       </style>
     </head>
     <body>
@@ -175,8 +208,8 @@ app.get('/', (req, res) => {
         </div>
 
         <div class="status">
-          <div class="status-title">✓ System Online with Database</div>
-          <div class="status-text">PostgreSQL connected - data persists across restarts!</div>
+          <div class="status-title">✓ System Online</div>
+          <div class="status-text">Full social media platform live - sign up to get started!</div>
         </div>
       </div>
     </body>
@@ -187,6 +220,7 @@ app.get('/', (req, res) => {
 // ── APP PAGE (PROTECTED) ────────────────────────
 app.get('/app', (req, res) => {
   try {
+    const templatePath = require.main.filename.replace('index.js', 'app-template.html');
     let html = fs.readFileSync(__dirname + '/app-template.html', 'utf8');
     res.send(html);
   } catch (err) {
@@ -215,7 +249,10 @@ app.get('/signup', (req, res) => {
           justify-content: center;
           padding: 20px;
         }
-        .container { max-width: 500px; width: 100%; }
+        .container {
+          max-width: 500px;
+          width: 100%;
+        }
         .card {
           background: rgba(26, 26, 46, 0.8);
           backdrop-filter: blur(10px);
@@ -235,10 +272,27 @@ app.get('/signup', (req, res) => {
           font-weight: 800;
           margin: 0 auto 24px;
         }
-        h1 { font-size: 24px; text-align: center; margin-bottom: 8px; }
-        .subtitle { text-align: center; color: #94A3B8; margin-bottom: 32px; font-size: 14px; }
-        .form-group { margin-bottom: 20px; }
-        label { display: block; margin-bottom: 8px; font-weight: 500; font-size: 14px; color: #E2E8F0; }
+        h1 {
+          font-size: 24px;
+          text-align: center;
+          margin-bottom: 8px;
+        }
+        .subtitle {
+          text-align: center;
+          color: #94A3B8;
+          margin-bottom: 32px;
+          font-size: 14px;
+        }
+        .form-group {
+          margin-bottom: 20px;
+        }
+        label {
+          display: block;
+          margin-bottom: 8px;
+          font-weight: 500;
+          font-size: 14px;
+          color: #E2E8F0;
+        }
         input {
           width: 100%;
           padding: 12px 16px;
@@ -276,8 +330,17 @@ app.get('/signup', (req, res) => {
           cursor: not-allowed;
           transform: none;
         }
-        .link { text-align: center; margin-top: 20px; color: #94A3B8; font-size: 14px; }
-        .link a { color: #7C3AED; text-decoration: none; font-weight: 600; }
+        .link {
+          text-align: center;
+          margin-top: 20px;
+          color: #94A3B8;
+          font-size: 14px;
+        }
+        .link a {
+          color: #7C3AED;
+          text-decoration: none;
+          font-weight: 600;
+        }
         .error {
           background: rgba(239, 68, 68, 0.1);
           border: 1px solid #EF4444;
@@ -412,7 +475,10 @@ app.get('/login', (req, res) => {
           justify-content: center;
           padding: 20px;
         }
-        .container { max-width: 500px; width: 100%; }
+        .container {
+          max-width: 500px;
+          width: 100%;
+        }
         .card {
           background: rgba(26, 26, 46, 0.8);
           backdrop-filter: blur(10px);
@@ -432,10 +498,27 @@ app.get('/login', (req, res) => {
           font-weight: 800;
           margin: 0 auto 24px;
         }
-        h1 { font-size: 24px; text-align: center; margin-bottom: 8px; }
-        .subtitle { text-align: center; color: #94A3B8; margin-bottom: 32px; font-size: 14px; }
-        .form-group { margin-bottom: 20px; }
-        label { display: block; margin-bottom: 8px; font-weight: 500; font-size: 14px; color: #E2E8F0; }
+        h1 {
+          font-size: 24px;
+          text-align: center;
+          margin-bottom: 8px;
+        }
+        .subtitle {
+          text-align: center;
+          color: #94A3B8;
+          margin-bottom: 32px;
+          font-size: 14px;
+        }
+        .form-group {
+          margin-bottom: 20px;
+        }
+        label {
+          display: block;
+          margin-bottom: 8px;
+          font-weight: 500;
+          font-size: 14px;
+          color: #E2E8F0;
+        }
         input {
           width: 100%;
           padding: 12px 16px;
@@ -472,8 +555,17 @@ app.get('/login', (req, res) => {
           opacity: 0.5;
           cursor: not-allowed;
         }
-        .link { text-align: center; margin-top: 20px; color: #94A3B8; font-size: 14px; }
-        .link a { color: #7C3AED; text-decoration: none; font-weight: 600; }
+        .link {
+          text-align: center;
+          margin-top: 20px;
+          color: #94A3B8;
+          font-size: 14px;
+        }
+        .link a {
+          color: #7C3AED;
+          text-decoration: none;
+          font-weight: 600;
+        }
         .error {
           background: rgba(239, 68, 68, 0.1);
           border: 1px solid #EF4444;
@@ -561,244 +653,144 @@ app.get('/health', (req, res) => {
   res.json({
     status: 'healthy',
     platform: 'VENTURE',
-    database: 'PostgreSQL',
     version: '1.0.0',
     timestamp: new Date().toISOString()
   });
 });
 
 // ── AUTH API ──────────────────────────────────
-app.post('/api/auth/register', async (req, res) => {
-  try {
-    const { username, email, password, displayName } = req.body;
+app.post('/api/auth/register', (req, res) => {
+  const { username, email, password, displayName } = req.body;
 
-    if (!username || !email || !password || !displayName) {
-      return res.status(400).json({ error: 'Missing required fields' });
-    }
-
-    // Check if user exists
-    const existingUser = await prisma.user.findFirst({
-      where: {
-        OR: [
-          { username: username.toLowerCase() },
-          { email: email.toLowerCase() }
-        ]
-      }
-    });
-
-    if (existingUser) {
-      return res.status(400).json({ error: 'Username or email already taken' });
-    }
-
-    // Hash password
-    const passwordHash = await bcrypt.hash(password, 10);
-
-    // Create user
-    const user = await prisma.user.create({
-      data: {
-        username: username.toLowerCase(),
-        displayName,
-        email: email.toLowerCase(),
-        passwordHash
-      }
-    });
-
-    const token = createSession(user.id);
-
-    res.status(201).json({
-      success: true,
-      token,
-      user: {
-        id: user.id,
-        username: user.username,
-        displayName: user.displayName,
-        email: user.email
-      }
-    });
-  } catch (err) {
-    logger.error('Register error:', err);
-    res.status(500).json({ error: 'Failed to create account' });
+  if (!username || !email || !password || !displayName) {
+    return res.status(400).json({ error: 'Missing required fields' });
   }
+
+  if (users.has(username.toLowerCase())) {
+    return res.status(400).json({ error: 'Username already taken' });
+  }
+
+  const userId = 'user_' + Date.now();
+  users.set(username.toLowerCase(), {
+    id: userId,
+    username: username.toLowerCase(),
+    displayName,
+    email,
+    password,
+    followers: [],
+    following: [],
+    createdAt: new Date()
+  });
+
+  const token = createSession(userId);
+
+  res.status(201).json({
+    success: true,
+    token,
+    user: {
+      id: userId,
+      username: username.toLowerCase(),
+      displayName,
+      email
+    }
+  });
 });
 
-app.post('/api/auth/login', async (req, res) => {
-  try {
-    const { identifier, password } = req.body;
+app.post('/api/auth/login', (req, res) => {
+  const { identifier, password } = req.body;
 
-    if (!identifier || !password) {
-      return res.status(400).json({ error: 'Email and password required' });
-    }
-
-    // Find user
-    const user = await prisma.user.findFirst({
-      where: {
-        OR: [
-          { username: identifier.toLowerCase() },
-          { email: identifier.toLowerCase() }
-        ]
-      }
-    });
-
-    if (!user) {
-      return res.status(401).json({ error: 'Invalid credentials' });
-    }
-
-    // Check password
-    const isPasswordValid = await bcrypt.compare(password, user.passwordHash || '');
-
-    if (!isPasswordValid) {
-      return res.status(401).json({ error: 'Invalid credentials' });
-    }
-
-    const token = createSession(user.id);
-
-    res.json({
-      success: true,
-      token,
-      user: {
-        id: user.id,
-        username: user.username,
-        displayName: user.displayName,
-        email: user.email
-      }
-    });
-  } catch (err) {
-    logger.error('Login error:', err);
-    res.status(500).json({ error: 'Failed to sign in' });
+  if (!identifier || !password) {
+    return res.status(400).json({ error: 'Email and password required' });
   }
-});
 
-// ── USER API ──────────────────────────────────
-app.get('/api/users/me', requireAuth, async (req, res) => {
-  try {
-    const user = await prisma.user.findUnique({
-      where: { id: req.userId }
-    });
+  let user = Array.from(users.values()).find(u =>
+    (u.username === identifier.toLowerCase() || u.email === identifier) &&
+    u.password === password
+  );
 
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
+  if (!user) {
+    return res.status(401).json({ error: 'Invalid credentials' });
+  }
 
-    res.json({
+  const token = createSession(user.id);
+
+  res.json({
+    success: true,
+    token,
+    user: {
       id: user.id,
       username: user.username,
       displayName: user.displayName,
-      email: user.email,
-      followers: user.followersCount,
-      following: user.followingCount
-    });
-  } catch (err) {
-    logger.error('Get user error:', err);
-    res.status(500).json({ error: 'Failed to fetch user' });
-  }
+      email: user.email
+    }
+  });
+});
+
+// ── USER API ──────────────────────────────────
+app.get('/api/users/me', requireAuth, (req, res) => {
+  const user = Array.from(users.values()).find(u => u.id === req.userId);
+  if (!user) return res.status(404).json({ error: 'User not found' });
+
+  res.json({
+    id: user.id,
+    username: user.username,
+    displayName: user.displayName,
+    email: user.email,
+    followers: user.followers.length,
+    following: user.following.length
+  });
 });
 
 // ── POSTS API ─────────────────────────────────
-app.post('/api/posts', requireAuth, async (req, res) => {
-  try {
-    const { content } = req.body;
+app.post('/api/posts', requireAuth, (req, res) => {
+  const { content } = req.body;
+  if (!content) return res.status(400).json({ error: 'Content required' });
 
-    if (!content) {
-      return res.status(400).json({ error: 'Content required' });
-    }
+  const postId = postIdCounter++;
+  const user = Array.from(users.values()).find(u => u.id === req.userId);
 
-    const post = await prisma.post.create({
-      data: {
-        content,
-        authorId: req.userId
-      }
-    });
+  posts.set(postId, {
+    id: postId,
+    authorId: req.userId,
+    author: user.username,
+    content,
+    likes: 0,
+    comments: [],
+    createdAt: new Date(),
+    liked: false
+  });
 
-    res.status(201).json({
-      id: post.id,
-      authorId: post.authorId,
-      content: post.content,
-      likes: post.likesCount,
-      commentCount: post.commentsCount,
-      createdAt: post.createdAt,
-      liked: false
-    });
-  } catch (err) {
-    logger.error('Create post error:', err);
-    res.status(500).json({ error: 'Failed to create post' });
-  }
+  res.status(201).json(posts.get(postId));
 });
 
-app.get('/api/posts/feed', requireAuth, async (req, res) => {
-  try {
-    const posts = await prisma.post.findMany({
-      where: { isPublished: true },
-      include: { author: true },
-      orderBy: { createdAt: 'desc' },
-      take: 50
-    });
-
-    const feedPosts = posts.map(post => ({
-      id: post.id,
-      authorId: post.authorId,
-      author: post.author.username,
-      content: post.content,
-      likes: post.likesCount,
-      commentCount: post.commentsCount,
-      createdAt: post.createdAt,
-      liked: false
+app.get('/api/posts/feed', requireAuth, (req, res) => {
+  const feedPosts = Array.from(posts.values())
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    .map(post => ({
+      ...post,
+      commentCount: post.comments.length
     }));
 
-    res.json(feedPosts);
-  } catch (err) {
-    logger.error('Get feed error:', err);
-    res.status(500).json({ error: 'Failed to fetch feed' });
-  }
+  res.json(feedPosts);
 });
 
-app.post('/api/posts/:id/like', requireAuth, async (req, res) => {
-  try {
-    const postId = req.params.id;
+app.post('/api/posts/:id/like', requireAuth, (req, res) => {
+  const postId = parseInt(req.params.id);
+  const post = posts.get(postId);
+  if (!post) return res.status(404).json({ error: 'Post not found' });
 
-    // Check if like exists
-    const existingLike = await prisma.like.findFirst({
-      where: {
-        userId: req.userId,
-        postId: postId
-      }
-    });
-
-    let post;
-
-    if (existingLike) {
-      // Unlike
-      await prisma.like.delete({
-        where: { id: existingLike.id }
-      });
-
-      post = await prisma.post.update({
-        where: { id: postId },
-        data: { likesCount: { decrement: 1 } }
-      });
-    } else {
-      // Like
-      await prisma.like.create({
-        data: {
-          userId: req.userId,
-          postId: postId
-        }
-      });
-
-      post = await prisma.post.update({
-        where: { id: postId },
-        data: { likesCount: { increment: 1 } }
-      });
-    }
-
-    res.json({
-      id: post.id,
-      likes: post.likesCount,
-      liked: !existingLike
-    });
-  } catch (err) {
-    logger.error('Like post error:', err);
-    res.status(500).json({ error: 'Failed to like post' });
+  const likeKey = `${req.userId}_${postId}`;
+  if (likes.has(likeKey)) {
+    likes.delete(likeKey);
+    post.likes--;
+    post.liked = false;
+  } else {
+    likes.add(likeKey);
+    post.likes++;
+    post.liked = true;
   }
+
+  res.json(post);
 });
 
 // ── 404 ───────────────────────────────────────
@@ -813,29 +805,20 @@ app.use((err, req, res, next) => {
 // ── START ─────────────────────────────────────
 const PORT = parseInt(process.env.PORT) || 3000;
 
-async function start() {
-  try {
-    // Test DB connection
-    await prisma.$queryRaw`SELECT 1`;
-    logger.info('✓ Database connected');
-
-    server.listen(PORT, '0.0.0.0', () => {
-      logger.info(`🚀 VENTURE API running on port ${PORT}`);
-      logger.info(`📡 PostgreSQL connected - persistent storage enabled`);
-    });
-  } catch (err) {
-    logger.error('Failed to start server:', err);
-    process.exit(1);
-  }
+try {
+  server.listen(PORT, '0.0.0.0', () => {
+    logger.info(`🚀 VENTURE Social Media Platform running on port ${PORT}`);
+    logger.info(`📡 Features: Feed, Posts, Profile, Like system - all live!`);
+  });
+} catch (err) {
+  logger.error('Failed to start server', err);
+  process.exit(1);
 }
 
 process.on('SIGTERM', async () => {
   logger.info('SIGTERM received, shutting down gracefully');
-  await prisma.$disconnect();
   server.close(() => process.exit(0));
 });
 
-start();
-
-module.exports = { app, server, prisma };
+module.exports = { app, server };
 
