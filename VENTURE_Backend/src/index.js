@@ -174,7 +174,7 @@ app.get('/', (req, res) => {
         <p>Creator Platform for Gaming, Content, & Community</p>
         
         <div class="links">
-          <a href="https://venture-studio-production.up.railway.app/signup" class="btn-primary">
+          <a href="/signup" class="btn-primary">
             Join as Creator
           </a>
           <a href="https://venture-kids-production.up.railway.app" class="btn-primary">
@@ -190,6 +190,249 @@ app.get('/', (req, res) => {
           <div class="status-text">Backend API is running and accepting connections</div>
         </div>
       </div>
+    </body>
+    </html>
+  `);
+});
+
+// ── SIGNUP PAGE ────────────────────────────────
+app.get('/signup', (req, res) => {
+  res.send(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>Sign Up - VENTURE</title>
+      <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+          background: linear-gradient(135deg, #0A0A0F 0%, #1a1a2e 100%);
+          color: #fff;
+          min-height: 100vh;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 20px;
+        }
+        .container {
+          max-width: 500px;
+          width: 100%;
+        }
+        .card {
+          background: rgba(26, 26, 46, 0.8);
+          backdrop-filter: blur(10px);
+          border: 1px solid rgba(124, 58, 237, 0.2);
+          border-radius: 16px;
+          padding: 40px;
+        }
+        .logo {
+          width: 60px;
+          height: 60px;
+          background: linear-gradient(135deg, #7C3AED, #06B6D4);
+          border-radius: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 32px;
+          font-weight: 800;
+          margin: 0 auto 24px;
+        }
+        h1 {
+          font-size: 24px;
+          text-align: center;
+          margin-bottom: 8px;
+        }
+        .subtitle {
+          text-align: center;
+          color: #94A3B8;
+          margin-bottom: 32px;
+          font-size: 14px;
+        }
+        .form-group {
+          margin-bottom: 20px;
+        }
+        label {
+          display: block;
+          margin-bottom: 8px;
+          font-weight: 500;
+          font-size: 14px;
+          color: #E2E8F0;
+        }
+        input {
+          width: 100%;
+          padding: 12px 16px;
+          border: 1px solid #374151;
+          border-radius: 8px;
+          background: rgba(15, 23, 42, 0.8);
+          color: #fff;
+          font-size: 14px;
+          transition: all 0.3s;
+        }
+        input:focus {
+          outline: none;
+          border-color: #7C3AED;
+          box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+        }
+        .password-requirements {
+          font-size: 12px;
+          color: #94A3B8;
+          margin-top: 8px;
+          line-height: 1.6;
+        }
+        button {
+          width: 100%;
+          padding: 12px;
+          margin-top: 24px;
+          background: linear-gradient(135deg, #7C3AED, #06B6D4);
+          color: #fff;
+          border: none;
+          border-radius: 8px;
+          font-weight: 600;
+          font-size: 16px;
+          cursor: pointer;
+          transition: all 0.3s;
+        }
+        button:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 10px 25px rgba(124, 58, 237, 0.3);
+        }
+        button:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+          transform: none;
+        }
+        .link {
+          text-align: center;
+          margin-top: 20px;
+          color: #94A3B8;
+          font-size: 14px;
+        }
+        .link a {
+          color: #7C3AED;
+          text-decoration: none;
+          font-weight: 600;
+        }
+        .link a:hover {
+          text-decoration: underline;
+        }
+        .error {
+          background: rgba(239, 68, 68, 0.1);
+          border: 1px solid #EF4444;
+          color: #FECACA;
+          padding: 12px;
+          border-radius: 8px;
+          margin-bottom: 20px;
+          font-size: 14px;
+          display: none;
+        }
+        .success {
+          background: rgba(34, 197, 94, 0.1);
+          border: 1px solid #22C55E;
+          color: #86EFAC;
+          padding: 12px;
+          border-radius: 8px;
+          margin-bottom: 20px;
+          font-size: 14px;
+          display: none;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="card">
+          <div class="logo">V</div>
+          <h1>Create Account</h1>
+          <p class="subtitle">Join VENTURE and start creating</p>
+          
+          <div id="error" class="error"></div>
+          <div id="success" class="success"></div>
+          
+          <form id="signupForm">
+            <div class="form-group">
+              <label for="displayName">Display Name</label>
+              <input type="text" id="displayName" name="displayName" placeholder="John Creator" required>
+            </div>
+            
+            <div class="form-group">
+              <label for="username">Username</label>
+              <input type="text" id="username" name="username" placeholder="johncreator" required pattern="[a-zA-Z0-9_]+" title="Letters, numbers, and underscores only">
+            </div>
+            
+            <div class="form-group">
+              <label for="email">Email</label>
+              <input type="email" id="email" name="email" placeholder="you@example.com" required>
+            </div>
+            
+            <div class="form-group">
+              <label for="password">Password</label>
+              <input type="password" id="password" name="password" placeholder="••••••••" required minlength="8">
+              <div class="password-requirements">
+                • At least 8 characters<br>
+                • 1 uppercase letter<br>
+                • 1 lowercase letter<br>
+                • 1 number<br>
+                • 1 special character (@\$!%*?&_#)
+              </div>
+            </div>
+            
+            <button type="submit">Sign Up</button>
+          </form>
+          
+          <div class="link">
+            Already have an account? <a href="/">Back to Home</a>
+          </div>
+        </div>
+      </div>
+      
+      <script>
+        document.getElementById('signupForm').addEventListener('submit', async (e) => {
+          e.preventDefault();
+          
+          const displayName = document.getElementById('displayName').value;
+          const username = document.getElementById('username').value;
+          const email = document.getElementById('email').value;
+          const password = document.getElementById('password').value;
+          
+          const errorDiv = document.getElementById('error');
+          const successDiv = document.getElementById('success');
+          const button = e.target.querySelector('button');
+          
+          errorDiv.style.display = 'none';
+          successDiv.style.display = 'none';
+          button.disabled = true;
+          button.textContent = 'Creating Account...';
+          
+          try {
+            const response = await fetch('/api/auth/register', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ displayName, username, email, password })
+            });
+            
+            const data = await response.json();
+            
+            if (!response.ok) {
+              throw new Error(data.error || data.errors?.[0]?.msg || 'Sign up failed');
+            }
+            
+            successDiv.textContent = '✓ Account created! Welcome to VENTURE.';
+            successDiv.style.display = 'block';
+            document.getElementById('signupForm').reset();
+            
+            setTimeout(() => {
+              window.location.href = '/';
+            }, 2000);
+          } catch (err) {
+            errorDiv.textContent = '✗ ' + err.message;
+            errorDiv.style.display = 'block';
+          } finally {
+            button.disabled = false;
+            button.textContent = 'Sign Up';
+          }
+        });
+      </script>
     </body>
     </html>
   `);
