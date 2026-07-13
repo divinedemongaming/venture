@@ -26,7 +26,6 @@ const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
 
-const { initSocket } = require('./services/socket');
 const { connectRedis } = require('./services/redis');
 const logger = require('./utils/logger');
 const errorHandler = require('./middleware/errorHandler');
@@ -87,7 +86,6 @@ app.use(helmet({
 const allowedOrigins = (process.env.CORS_ORIGINS || 'http://localhost:8081').split(',');
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (mobile apps, curl)
     if (!origin) return callback(null, true);
     if (allowedOrigins.includes(origin)) return callback(null, true);
     callback(new Error('Not allowed by CORS'));
@@ -128,8 +126,6 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(watermarkMiddleware);
 app.use(securityMiddleware);
 // ── KIDS PRIVACY GUARD ────────────────────────────────────────
-// Zero-profile, zero-contact, zero-track for children's sessions.
-// Hard security boundary — must be before ALL route handlers.
 app.use(kidsPrivacyGuard);
 
 // ── STATIC FILES ──────────────────────────────
@@ -179,10 +175,17 @@ app.use((req, res) => res.status(404).json({ error: 'Route not found' }));
 // ── ERROR HANDLER ─────────────────────────────
 app.use(errorHandler);
 
-// ── SOCKET.IO ─────────────────────────────────
-const socketServer = initSocket(server);
-// Block Kids Mode sessions from Socket.IO — no persistent connection allowed
-if (socketServer) socketServer.use(kidsSocketBlock);
+// ── SOCKET.IO (LAZY LOADED) ─────────────────────────────
+let socketServer = null;
+try {
+  const { initSocket } = require('./services/socket');
+  socketServer = initSocket(server);
+  if (socketServer && kidsSocketBlock) {
+    socketServer.use(kidsSocketBlock);
+  }
+} catch (err) {
+  logger.warn('Socket.IO initialization deferred (database not ready)', { error: err.message });
+}
 
 // ── START ─────────────────────────────────────
 const PORT = parseInt(process.env.PORT) || 3000;
@@ -221,3 +224,4 @@ process.on('unhandledRejection', (reason) => {
 
 start();
 module.exports = { app, server };
+
