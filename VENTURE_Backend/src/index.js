@@ -33,7 +33,7 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
       imgSrc: ["'self'", 'data:', 'https:'],
       connectSrc: ["'self'", 'wss:', 'https:'],
@@ -70,6 +70,130 @@ app.use(compression());
 app.use(morgan('combined', { stream: { write: msg => logger.info(msg.trim()) } }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// ── HOME PAGE ──────────────────────────────────
+app.get('/', (req, res) => {
+  res.send(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>VENTURE - Creator Platform</title>
+      <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+          background: linear-gradient(135deg, #0A0A0F 0%, #1a1a2e 100%);
+          color: #fff;
+          min-height: 100vh;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 20px;
+        }
+        .container {
+          max-width: 600px;
+          text-align: center;
+        }
+        .logo {
+          width: 80px;
+          height: 80px;
+          background: linear-gradient(135deg, #7C3AED, #06B6D4);
+          border-radius: 20px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 40px;
+          font-weight: 800;
+          margin: 0 auto 30px;
+        }
+        h1 {
+          font-size: 32px;
+          margin-bottom: 10px;
+        }
+        p {
+          color: #94A3B8;
+          font-size: 16px;
+          margin-bottom: 40px;
+          line-height: 1.5;
+        }
+        .links {
+          display: flex;
+          gap: 15px;
+          justify-content: center;
+          flex-wrap: wrap;
+        }
+        a {
+          padding: 12px 24px;
+          border-radius: 8px;
+          text-decoration: none;
+          font-weight: 600;
+          transition: all 0.3s;
+          display: inline-block;
+        }
+        .btn-primary {
+          background: linear-gradient(135deg, #7C3AED, #06B6D4);
+          color: #fff;
+        }
+        .btn-primary:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 10px 25px rgba(124, 58, 237, 0.3);
+        }
+        .btn-secondary {
+          border: 2px solid #374151;
+          color: #94A3B8;
+        }
+        .btn-secondary:hover {
+          border-color: #7C3AED;
+          color: #fff;
+        }
+        .status {
+          margin-top: 50px;
+          padding: 20px;
+          background: rgba(34, 197, 94, 0.1);
+          border-left: 4px solid #22C55E;
+          border-radius: 8px;
+          text-align: left;
+        }
+        .status-title {
+          color: #22C55E;
+          font-weight: 600;
+          margin-bottom: 8px;
+        }
+        .status-text {
+          color: #86EFAC;
+          font-size: 14px;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="logo">V</div>
+        <h1>VENTURE</h1>
+        <p>Creator Platform for Gaming, Content, & Community</p>
+        
+        <div class="links">
+          <a href="https://venture-studio-production.up.railway.app/signup" class="btn-primary">
+            Join as Creator
+          </a>
+          <a href="https://venture-kids-production.up.railway.app" class="btn-primary">
+            Watch on Kids
+          </a>
+          <a href="/api/auth/register" class="btn-secondary">
+            API Register
+          </a>
+        </div>
+
+        <div class="status">
+          <div class="status-title">✓ System Online</div>
+          <div class="status-text">Backend API is running and accepting connections</div>
+        </div>
+      </div>
+    </body>
+    </html>
+  `);
+});
 
 // ── HEALTH ────────────────────────────────────
 app.get('/health', (req, res) => {
